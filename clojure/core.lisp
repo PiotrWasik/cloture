@@ -1178,7 +1178,7 @@ nested)."
   (#_lookup (coll _ default) default)
   (#_lookup (coll _) #_nil)
   #_IEquiv
-  (#_equiv (n x) (or (null x) (#_empty? x)))
+  (#_equiv (n x) (or (null x) (and (#_seq? x)) (#_empty? x)))
   #_IReduce
   (#_internal-reduce (coll _ start) start)
   (#_internal-reduce (coll f) (ifncall f)))
