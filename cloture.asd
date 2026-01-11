@@ -44,6 +44,7 @@
                 :serial t
                 :components ((:file "core")
                              (:file "sycamore")
+                             (:file "core2-early")
                              (:file "core2")
                              (:file "pprint")
                              (:file "template")
