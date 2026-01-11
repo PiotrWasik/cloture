@@ -2802,7 +2802,7 @@ Analogous to `mapcar'."
   ((ns name) (make-keyword (string+ ns "/" name))))
 
 (defun-1 #_hash-map (&rest keys-and-vals &key &allow-other-keys)
-  (reduce #'with
+  (reduce (lambda (map kv) (with map (first kv) (second kv)))
           (batches keys-and-vals 2 :even t)
           :initial-value (empty-map)))
 
