@@ -112,6 +112,7 @@
             (rest (and variadic? '(&rest %&))))
         ;; NB This must return a lambda so it can be used in function position.
         `(lambda (,@pos-args ,@rest)
+           ,@(unsplice (keyword-fbinding-form forms))
            ,forms)))))
 
 (defun read-anon (stream char arg)

@@ -190,6 +190,7 @@ This is an issue for specializing on Clojure's nil, true, or false."
                          meta-doc)))
            (backing-var (backing-var name)))
     `(progn
+       ,@(unsplice (keyword-toplevel-fbinding-form expr))
        ,(if dynamic?
             `(progn
                (expose-to-clojure ,name ,backing-var)
@@ -373,12 +374,15 @@ nested)."
          (match ,args-sym
            ,@(mapcar #'fn-clause->trivia-clause sorted-clauses)
            (otherwise (error (#_ArityException. (length ,args-sym) ',name))))))
+    (def fbinding (keyword-fbinding-form body))
     (if name
         `(named-lambda ,name (&rest ,args-sym)
            ,@(unsplice docstr)
+           ,@(unsplice fbinding)
            ,dispatch)
         `(lambda (&rest ,args-sym)
            ,@(unsplice docstr)
+           ,@(unsplice fbinding)
            ,dispatch))))
 
 (define-clojure-macro #_loop (binds &body body)

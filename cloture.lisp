@@ -364,6 +364,43 @@ Also return (as a second value) a list of all the symbols bound."
 (defun proclaim-keywords (&rest keywords)
   (fbind-keywords keywords))
 
+(defun keywords-called-in (form)
+  "The keywords FORM calls as functions -- `(:key map)' -- anywhere in it outside a quoted form."
+  (let ((found '()))
+    (labels ((walk (x)
+               (typecase x
+                 (cons
+                  (unless (eql (car x) 'quote)
+                    (when (keywordp (car x))
+                      (pushnew (car x) found))
+                    (loop for tail on x
+                          do (walk (car tail))
+                          while (consp (cdr tail)))))
+                 ;; a vector, map or set literal is read as an FSet collection, not a list
+                 (fset:seq (fset:do-seq (e x) (walk e)))
+                 (fset:map (fset:do-map (k v x) (walk k) (walk v)))
+                 (fset:set (fset:do-set (e x) (walk e))))))
+      (walk form))
+    found))
+
+(defun keyword-fbinding-form (body)
+  "A form for the start of a lambda's BODY that fbinds, once at load time, the keywords BODY calls
+as functions (FBIND-KEYWORDS), or NIL when it calls none.  So `(:key map)' works in compiled code
+without a DECLARE-KEYWORDS, also when the code is loaded from a fasl into a fresh image."
+  (let ((keywords (keywords-called-in body)))
+    (when keywords
+      `(load-time-value (fbind-keywords ',keywords) t))))
+
+(defun keyword-toplevel-fbinding-form (form)
+  "A top-level form that fbinds the keywords FORM calls as functions (FBIND-KEYWORDS) when it is compiled, loaded
+or evaluated, or NIL when FORM calls none.  A definer emits it before its definition: compiling a file in a fresh
+image then warns of no `undefined function :|key|' (the compiler finds the keywords fbound), and a keyword called
+outside any function, `(def x (:key m))', is fbound before the value is computed.  KEYWORD-FBINDING-FORM still
+fbinds, at load time, the keywords of a function made anywhere else."
+  (let ((keywords (keywords-called-in form)))
+    (when keywords
+      `(eval-always (fbind-keywords ',keywords)))))
+
 (defmacro declare-keywords (&rest keywords)
   `(eval-always
      (proclaim-keywords ,@keywords)))
