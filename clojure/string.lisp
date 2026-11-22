@@ -87,11 +87,31 @@ vector or a lazy seq was a TYPE-ERROR.)"
   (check-type s string)
   (string-upcase s))
 
-;;; Added for Buboflash's shared code.
+;;; Added for Buboflash's shared code.  Whitespace is ClojureScript's -- JavaScript's `\s' and
+;;; the no-break space, what goog.string.trim and isEmptyOrWhitespace strip -- since CLJS is the
+;;; oracle the shared code is held to.
+
+(defparameter *js-whitespace*
+  (coerce (list #\Tab #\Newline (code-char 11) #\Page #\Return #\Space
+                (code-char #xa0) (code-char #x1680)
+                (code-char #x2000) (code-char #x2001) (code-char #x2002) (code-char #x2003)
+                (code-char #x2004) (code-char #x2005) (code-char #x2006) (code-char #x2007)
+                (code-char #x2008) (code-char #x2009) (code-char #x200a)
+                (code-char #x2028) (code-char #x2029) (code-char #x202f) (code-char #x205f)
+                (code-char #x3000) (code-char #xfeff))
+          'string))
 
 (defun-1 |clojure.string|:|lower-case| (s)
   (check-type s string)
   (string-downcase s))
+
+(defun-1 |clojure.string|:|trim| (s)
+  (check-type s string)
+  (string-trim *js-whitespace* s))
+
+(defun-1 |clojure.string|:|blank?| (s)
+  (? (or (not (stringp s))
+         (every (lambda (c) (find c *js-whitespace*)) s))))
 
 (defun-1 |clojure.string|:|includes?| (s substr)
   (? (search substr s)))
