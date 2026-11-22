@@ -86,3 +86,17 @@ vector or a lazy seq was a TYPE-ERROR.)"
 (defun-1 |clojure.string|:|upper-case| (s)
   (check-type s string)
   (string-upcase s))
+
+;;; Added for Buboflash's shared code.
+
+(defun-1 |clojure.string|:|lower-case| (s)
+  (check-type s string)
+  (string-downcase s))
+
+(defun-1 |clojure.string|:|includes?| (s substr)
+  (? (search substr s)))
+
+(defun-1 |clojure.string|:|split| (s re)
+  ;; trailing empty strings dropped, as Clojure's and ClojureScript's split drop them (cl-ppcre's
+  ;; split drops them too); the regex is cl-ppcre's, where `\s' is ASCII whitespace
+  (convert 'seq (ppcre:split (raw-regex-string re) s)))

@@ -48,6 +48,7 @@
                              (:file "env")
                              (:file "core2-early")
                              (:file "core2")
+                             (:file "core3")
                              (:file "pprint")
                              (:file "template")
                              (:file "set")
