@@ -1128,14 +1128,23 @@ nested)."
               (if val? val not-found)))
   hash-table
   (#_lookup (table key)
-            (gethash table key #_nil))
+            (gethash key table #_nil))
   (#_lookup (table key not-found)
-            (gethash table key not-found))
+            (gethash key table not-found))
   set
   (#_lookup (set key)
             (#_lookup set key #_nil))
   (#_lookup (set key not-found)
-            (if (fset:lookup set key) key not-found)))
+            (if (fset:lookup set key) key not-found))
+  ;; Clojure's get answers not-found for anything that is no map, set or table -- (get false :k) is nil,
+  ;; as (:k false) is -- where this had no method at all
+  t
+  (#_lookup (x key)
+            (declare (ignore x key))
+            #_nil)
+  (#_lookup (x key not-found)
+            (declare (ignore x key))
+            not-found))
 
 (extend-protocol #_IMeta
   t
@@ -1296,7 +1305,8 @@ nested)."
 
 (extend-type string
   #_ISeqable
-  (#_seq (s) (coerce s 'list))
+  ;; Clojure's (seq "") is nil; Lisp's empty list is truthy here (Lisp nil is reserved for it).
+  (#_seq (s) (if (emptyp s) #_nil (coerce s 'list)))
   #_IEquiv
   (#_equiv (x y)
            (? (and (stringp y)
@@ -1720,12 +1730,13 @@ nested)."
   (macroexpand (assure symbol sym)))
 
 (defun-1 #_resolve (sym)
-  (#_ns-resolve #_*ns* sym))
+  (#_ns-resolve *package* sym))
 
 (defun-1 #_symbol (ns &optional name)
+  ;; with one argument, NS is the name: (symbol "x") interned NAME, the missing second argument
   (if (not (nil? name))
       (intern name (#_the-ns ns))
-      (intern name)))
+      (intern ns)))
 
 (defun-1 #_symbol? (x)
   (? (and (symbolp x) (not (keywordp x)))))
@@ -2672,7 +2683,10 @@ Analogous to `mapcar'."
 
 (defun-1 #_mix-collection-hash (hash-basis count)
   ;; TODO export from cl-murmurhash
-  (mask-int (murmurhash::hash-integer count hash-basis t)))
+  ;; HASH-BASIS is a sum of masked (signed) hashes, but murmurhash's seed is an
+  ;; (UNSIGNED-BYTE 32): on 64-bit SBCL a negative basis is a TYPE-ERROR (a set of
+  ;; strings crashed).  Its low 32 bits are the same seed, unsigned.
+  (mask-int (murmurhash::hash-integer count (ldb (byte 32 0) hash-basis) t)))
 
 (defvar *unchecked-math* #_false)
 

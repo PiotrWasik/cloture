@@ -43,9 +43,18 @@
 (defun-1 #_ends-with? (string suffix)
   (? (string$= suffix string)))
 
+(defun join-items (coll)
+  "COLL's items as strings, as Clojure's join stringifies them: any seqable -- a vector, a lazy
+seq, a list -- and nil as no items.  (STRING-JOIN alone takes only a Lisp sequence, so a
+vector or a lazy seq was a TYPE-ERROR.)"
+  (if (falsy? coll)
+      '()
+      (iterate (for item in-seq coll)
+        (collect (#_str item)))))
+
 (defn #_join
-  ((coll) (string-join coll ""))
-  ((sep coll) (string-join coll sep)))
+  ((coll) (string-join (join-items coll) ""))
+  ((sep coll) (string-join (join-items coll) (#_str sep))))
 
 (defun replace-aux (s match replacement)
   (multiple-value-ematch (values match replacement)
@@ -62,6 +71,9 @@
      (replace-aux s
                   (compiled-regex-function match)
                   replacement))
+    ;; an empty replacement is no replacement string the grammar parses: it deletes the match
+    (((type function) (and (type string) (satisfies emptyp)))
+     (ppcre:regex-replace-all match s ""))
     (((type function) (type string))
      (replace-aux s match (parse-replacement-string replacement)))
     (((type function) (type replacement-string))
